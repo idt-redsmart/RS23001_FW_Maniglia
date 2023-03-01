@@ -1,20 +1,20 @@
 
-#ifndef LOAD_CELL
-#define LOAD_CELL
+#ifndef LOAD_CELL_
+#define LOAD_CELL_
 
 #include <def.h>
-#include <HX711.h>
-
 
 class LoadCell
 {
 public:
-
-    LoadCell(): _scale_A(LOADCELL_A_DOUT_PIN, LOADCELL_A_SCK_PIN), 
-                _scale_B(LOADCELL_B_DOUT_PIN, LOADCELL_B_SCK_PIN) {}
+    LoadCell() : _scale_A(LOADCELL_A_DOUT_PIN, LOADCELL_A_SCK_PIN),
+                 _scale_B(LOADCELL_B_DOUT_PIN, LOADCELL_B_SCK_PIN) {}
 
     void setup();
     float getWeight();
+
+    void writeScaleData(String tmp) { _scaleData = tmp; }
+    String readScaleData() { return _scaleData; }
 
 private:
     HX711 _scale_A;
@@ -27,7 +27,7 @@ private:
     const int _LOADCELL_B_SCK_PIN = LOADCELL_B_SCK_PIN;
     float _calibration_factor = LOADCELL_CALIBRATION_FACTOR; // this calibration factor is adjusted according to my load cell
 
-
+    String _scaleData = LOADCELL_DATA_DEFAULT_VALUE;
 };
 
 #endif

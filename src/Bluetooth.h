@@ -1,11 +1,14 @@
 
-#ifndef BLUETOOTH_
-#define BLUETOOTH_
+#ifndef _BLUETOOTH_H_
+#define _BLUETOOTH_H_
 
-#include <Arduino_BHY2.h>
-#include <ArduinoBLE.h>
-#include "def.h"
-// #include "PrjDefines.h"
+#include <def.h>
+#include <ShockDetection.h>
+#include <LoadCell.h>
+
+extern ShockDetection Shock;
+extern LoadCell Scale;
+
 
 class Bluetooth
 {
@@ -16,9 +19,13 @@ public:
                   _BLE_CONST_firmwareRevisionString("2A26", BLERead, FW_VERSION),
                   _BLE_CONST_hardwareRevisionString("2A27", BLERead, HW_VERSION),
                   _BLE_CONST_manufacturerNameString("2A29", BLERead, "idtsolution.com"),
+                  //board service
                   _BLE_boardService("1daa0360-88a7-41cd-857d-a22ec7ded851"),
                   _BLE_boolKeepAlive("1daa0361-88a7-41cd-857d-a22ec7ded851", BLERead | BLENotify),
-                  _BLE_arrayAuthentication("1daa0362-88a7-41cd-857d-a22ec7ded851", BLERead | BLEWrite, AUTHENTICATION_CHARATERISTIC_SIZE, true) {}
+                  _BLE_arrayAuthentication("1daa0362-88a7-41cd-857d-a22ec7ded851", BLERead | BLEWrite, AUTHENTICATION_CHARATERISTIC_SIZE, true),
+                  _BLE_StringShockDetect("1daa0363-88a7-41cd-857d-a22ec7ded851", BLERead | BLEWrite | BLENotify, SHOCK_DATA_SIZE, false),
+                  _BLE_StringWeight("1daa0364-88a7-41cd-857d-a22ec7ded851", BLERead | BLEWrite , LOADCELL_DATA_SIZE, false),
+                  _BLE_StringRequest("1daa0366-88a7-41cd-857d-a22ec7ded851", BLERead | BLEWrite , REQUEST_DATA_SIZE, false) {}
 
     void setup();
     void authentication();
@@ -26,8 +33,9 @@ public:
     void printConnectedCentral(BLEDevice _central);
     byte StringToHEX_int(unsigned char *hex_ptr);
     void checkCentralConnected();
-    inline void poll() { BLE.poll(); }
-
+    void poll() { BLE.poll(); }
+    void writeShockDetect();
+    void writeWeight();
 
 private:
     void _setupBLEdeviceName();
@@ -55,12 +63,19 @@ private:
     BLECharacteristic _BLE_CONST_manufacturerNameString;
 
     // BOARD SERVICE
-    // BOARD SERVICE - Charateristics
     BLEService _BLE_boardService;
+    // BOARD SERVICE - Charateristics
     // Keep alive - Charateristic
     BLEBoolCharacteristic _BLE_boolKeepAlive;
     // Authentication - Charateristic
     BLECharacteristic _BLE_arrayAuthentication;
+    // Shock detection - Charateristic
+    BLECharacteristic _BLE_StringShockDetect;
+    // Load cell - Charateristic
+    BLECharacteristic _BLE_StringWeight;
+    // Request from app - Charateristic
+    BLECharacteristic _BLE_StringRequest;
+
 };
 
 #endif

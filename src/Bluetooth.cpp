@@ -1,8 +1,7 @@
-#include "Bluetooth.h"
 
+#include <Bluetooth.h>
 
-
-void Bluetooth::setup()//setup
+void Bluetooth::setup() // setup
 {
 	// begin initialization
 	if (!BLE.begin())
@@ -29,10 +28,11 @@ void Bluetooth::setup()//setup
 	_BLE_deviceInformationService.addCharacteristic(_BLE_CONST_manufacturerNameString);
 
 	// add the characteristics to the service - BLE_boardService
-	// _BLE_boardService.addCharacteristic(_BLE_arrayOutputData);
-	// _BLE_boardService.addCharacteristic(_BLE_arrayInputData);
 	_BLE_boardService.addCharacteristic(_BLE_boolKeepAlive);
 	_BLE_boardService.addCharacteristic(_BLE_arrayAuthentication);
+	_BLE_boardService.addCharacteristic(_BLE_StringShockDetect);
+	_BLE_boardService.addCharacteristic(_BLE_StringWeight);
+	_BLE_boardService.addCharacteristic(_BLE_StringRequest);
 
 	// add the service
 	BLE.addService(_BLE_deviceInformationService);
@@ -146,9 +146,10 @@ void Bluetooth::_eraseBLEcharateristic(BLECharacteristic &BLECharacteristic)
 
 void Bluetooth::eraseAllBLEcharateristics()
 {
-	// eraseBLEcharateristic(BLE_arrayOutputData);
-	// eraseBLEcharateristic(BLE_arrayInputData);
 	_eraseBLEcharateristic(_BLE_boolKeepAlive);
+	_eraseBLEcharateristic(_BLE_StringShockDetect);
+	_eraseBLEcharateristic(_BLE_StringWeight);
+	_eraseBLEcharateristic(_BLE_StringRequest);
 }
 
 void Bluetooth::printConnectedCentral(BLEDevice _central)
@@ -213,106 +214,148 @@ byte Bluetooth::StringToHEX_int(unsigned char *hex_ptr)
 void Bluetooth::authentication()
 {
 	char aInData[AUTHENTICATION_CHARATERISTIC_SIZE];
-	if(_bFLAG_CentralConnected && !_bFLAG_Authenticated)
+	if (_bFLAG_CentralConnected && !_bFLAG_Authenticated)
 	{
-		if(_BLE_arrayAuthentication.written())
+		if (_BLE_arrayAuthentication.written())
+		{
+			// calculate the key value --> mac address + crc32
+			String mac_add = BLE.address();
+			byte macAddress[16]; // mac address ascii char (6*2=12) + 4 crc32
+			byte mac_byte[2];
+			unsigned index = 0;
+			bool bEqual = false;
+
+			for (int i = 0; i < 12; i++)
 			{
-				//calculate the key value --> mac address + crc32
-				String mac_add = BLE.address();
-				byte macAddress[16]; //mac address ascii char (6*2=12) + 4 crc32
-				byte mac_byte[2];
-				unsigned index = 0;		
-				bool bEqual = false;	
 
-				for (int i = 0; i < 12; i++) {
-
-					mac_byte[0] = mac_add.charAt(index);
-					index++;
-					mac_byte[1] = mac_add.charAt(index); ;
-					index += 2;		//remove the ":"
-					macAddress[i] = StringToHEX_int(mac_byte);
-				}
-				
-   				_BLE_arrayAuthentication.readValue(aInData, AUTHENTICATION_CHARATERISTIC_SIZE);
-				
-				#ifdef DEBUG
-				DEBUG.print("authentication in value:");
-				for(int i=0; i<6; i++)
-				{
-					DEBUG.print(aInData[i],HEX);
-					DEBUG.print(".");
-				}
-				DEBUG.println("");
-
-				DEBUG.print("mac address value:");
-				for(int i=0; i<6; i++)
- 				{
-					DEBUG.print(macAddress[i],HEX);
-					DEBUG.print(".");
-				}
-				DEBUG.println();
-
-				#endif
-
-				bEqual = true;
-				//compare received mac
-				/*for(int i=0; i<6; i++)
-				{
-					if(((aInData[i]-i)& 0xFF) != (macAddress[i]))
-					{
-						DEBUG.println(aInData[i],HEX);
-						DEBUG.println(aInData[i]-i,HEX);
-						bEqual = false;
-					}
-				}*/
-
-				//clean charateristic
-				for(int i=0; i<AUTHENTICATION_CHARATERISTIC_SIZE; i++)
-				{
-					aInData[i]= 0;
-				}
-
-				
-				//authentication success
-				if(bEqual)
-				{
-					aInData[0]=0x31;
-					_bFLAG_Authenticated = true;
-					#ifdef DEBUG
-					DEBUG.println("autentication success");
-					#endif
-				}
-				//autentication failed
-				else
-				{
-					aInData[0]=0x30;
-					#ifdef DEBUG
-					DEBUG.println("autentication failed");
-					#endif
-				}
-				
-				_BLE_arrayAuthentication.writeValue(aInData, AUTHENTICATION_CHARATERISTIC_SIZE, true);
-
+				mac_byte[0] = mac_add.charAt(index);
+				index++;
+				mac_byte[1] = mac_add.charAt(index);
+				;
+				index += 2; // remove the ":"
+				macAddress[i] = StringToHEX_int(mac_byte);
 			}
 
+			_BLE_arrayAuthentication.readValue(aInData, AUTHENTICATION_CHARATERISTIC_SIZE);
+
+#ifdef DEBUG
+			DEBUG.print("authentication in value:");
+			for (int i = 0; i < 6; i++)
+			{
+				DEBUG.print(aInData[i], HEX);
+				DEBUG.print(".");
+			}
+			DEBUG.println("");
+
+			DEBUG.print("mac address value:");
+			for (int i = 0; i < 6; i++)
+			{
+				DEBUG.print(macAddress[i], HEX);
+				DEBUG.print(".");
+			}
+			DEBUG.println();
+
+#endif
+
+			bEqual = true;
+			// compare received mac
+			/*for(int i=0; i<6; i++)
+			{
+				if(((aInData[i]-i)& 0xFF) != (macAddress[i]))
+				{
+					DEBUG.println(aInData[i],HEX);
+					DEBUG.println(aInData[i]-i,HEX);
+					bEqual = false;
+				}
+			}*/
+
+			// clean charateristic
+			for (int i = 0; i < AUTHENTICATION_CHARATERISTIC_SIZE; i++)
+			{
+				aInData[i] = 0;
+			}
+
+			// authentication success
+			if (bEqual)
+			{
+				aInData[0] = 0x31;
+				_bFLAG_Authenticated = true;
+#ifdef DEBUG
+				DEBUG.println("autentication success");
+#endif
+			}
+			// autentication failed
+			else
+			{
+				aInData[0] = 0x30;
+#ifdef DEBUG
+				DEBUG.println("autentication failed");
+#endif
+			}
+
+			_BLE_arrayAuthentication.writeValue(aInData, AUTHENTICATION_CHARATERISTIC_SIZE, true);
+		}
 	}
-	
-	if(!_bFLAG_CentralConnected)
+
+	if (!_bFLAG_CentralConnected)
 	{
 		_bFLAG_Authenticated = false;
 	}
 }
 
-void Bluetooth::checkCentralConnected(){
-	// Check Central device connection
-  if (_bFLAG_CentralConnected != BLE.connected())
-  {
-    _bFLAG_CentralConnected = BLE.connected();
-    printConnectedCentral(BLE.central());
-    // digitalWrite(PIN_LED_CONNECTED, bFLAG_CentralConnected);
+void Bluetooth::checkCentralConnected()
+{
 
-    // If new connection is established clear all charateristics values
-    if (_bFLAG_CentralConnected)
-      eraseAllBLEcharateristics();
-  }
+	// Check Central device connection
+	if (_bFLAG_CentralConnected != BLE.connected())
+	{
+		_bFLAG_CentralConnected = BLE.connected();
+		printConnectedCentral(BLE.central());
+		// digitalWrite(PIN_LED_CONNECTED, bFLAG_CentralConnected);
+
+		// If new connection is established clear all charateristics values
+		if (_bFLAG_CentralConnected)
+			eraseAllBLEcharateristics();
+	}
+}
+
+void Bluetooth::writeShockDetect()
+{
+	if (_bFLAG_CentralConnected && _bFLAG_Authenticated && Shock.readNewData())
+	{
+		_BLE_StringShockDetect.writeValue(Shock.readShockData().c_str(), SHOCK_DATA_SIZE, false);
+		Shock.writeNewData(false);
+		Shock.writeShockData(SHOCK_DATA_DEFAULT_VALUE);
+	}
+}
+
+void Bluetooth::writeWeight()
+{
+	if (!_BLE_StringRequest.written())
+	{
+		return;
+	}
+
+	char requestDataIn[1] = REQUEST_DATA_DEFAULT_VALUE;
+	_BLE_StringRequest.readValue(requestDataIn, REQUEST_DATA_SIZE);
+
+	if (requestDataIn[0] == 'P')
+	{
+		float tmpWeight = 18.73; // Scale.getWeight();
+
+		int tmp = tmpWeight / 1;
+		String scaleDataTmp = "P;" + String(tmp);
+		tmpWeight -= tmp;
+		tmpWeight = tmpWeight * 100;
+
+		tmp = tmpWeight / 1;
+
+		Scale.writeScaleData(scaleDataTmp + "." + String(tmp));
+
+		Serial.println("Scale data sent: " + Scale.readScaleData());
+
+		_BLE_StringWeight.writeValue(Scale.readScaleData().c_str(), LOADCELL_DATA_SIZE, false);
+
+		_eraseBLEcharateristic(_BLE_StringRequest);
+	}
 }

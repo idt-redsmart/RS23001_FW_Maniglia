@@ -1,5 +1,18 @@
 
+//MAIN
+#include <Arduino.h>
+#include <Nicla_System.h>
+#include <FireTimer.h>
 
+//BLE
+#include <Arduino_BHY2.h>
+#include <ArduinoBLE.h>
+
+//LOAD CELL
+#include <HX711.h>
+
+
+//MAIN
 #define DEBUG Serial
 
 //LOAD CELL
@@ -8,6 +21,8 @@
 #define LOADCELL_B_DOUT_PIN 3
 #define LOADCELL_B_SCK_PIN 4
 #define LOADCELL_CALIBRATION_FACTOR 100
+#define LOADCELL_DATA_SIZE 7
+#define LOADCELL_DATA_DEFAULT_VALUE "P;00.00"
 
 //BLE
 //Local name
@@ -17,3 +32,16 @@
 
 #define AUTHENTICATION_CHARATERISTIC_SIZE	50	//50 byte
 
+//SHOCK DETECTION
+#define SHOCK_THRESHOLD 700
+#define SHOCK_DEBOUNCE_TIME 200
+#define SHOCK_NUM_SAMPLE 10
+#define SHOCK_SCALE_VALUE 10
+#define SHOCK_DATA_SIZE 16
+#define SHOCK_DATA_DEFAULT_VALUE "U;0000;0000;0000"
+
+//BATTERY
+
+//REQUEST
+#define REQUEST_DATA_SIZE 1
+#define REQUEST_DATA_DEFAULT_VALUE ""
