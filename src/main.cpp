@@ -3,36 +3,43 @@
 #include <Bluetooth.h>
 #include <LoadCell.h>
 #include <ShockDetection.h>
+#include <Battery.h>
 
 LoadCell Scale;
 Bluetooth BT;
 ShockDetection Shock;
+Battery Bat;
+Led StatusLed;
 
 FireTimer batt;
 
 void setup()
 {
 // put your setup code here, to run once:
-#ifdef DEBUG
+#ifdef MAIN_DEBUG_
     Serial.begin(115200);
-    while (!Serial)
-    {
-    }
 #endif
     // delay(500);
 
+    // Serial.println("BEGIN");
+
     nicla::begin();
-    nicla::enableCharge(100);
+    Bat.setup();
 
     BHY2.begin(NICLA_STANDALONE);
 
-    Scale.setup();
+    // Scale.setup();
     BT.setup();
     Shock.setup();
+    StatusLed.setup();
 
-    batt.begin(5000);
-    batt.start();
+    batt.begin(30000);
+    Bat.beginTimer();
+
+    // batt.start();
 }
+
+int provaled = 0;
 
 void loop()
 {
@@ -44,6 +51,7 @@ void loop()
     BT.checkCentralConnected();
     BT.writeShockDetect();
     BT.writeWeight();
+    BT.writeBatteryLevel();
 
     Shock.detect();
 
@@ -51,7 +59,14 @@ void loop()
     if (batt.fire())
     {
         batt.stop();
-        Serial.println("BATTERIA: " + String(nicla::getBatteryStatus()));
+        // Serial.println("BATTERIA: " + String(nicla::getBatteryStatus()));
+
+        if (provaled > 3)
+        {
+            provaled = 0;
+        }
+
+        StatusLed.setColor(0, provaled);
     }
 }
 

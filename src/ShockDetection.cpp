@@ -5,6 +5,10 @@ void ShockDetection::setup()
 {
     _linearAcc.begin(15, 0);
     _debounce_timer.begin(SHOCK_DEBOUNCE_TIME);
+
+    #ifdef SHOCK_DEBUG_
+    Serial.println("Accelerometer setup OK");
+#endif
 }
 
 bool ShockDetection::detect()
@@ -56,7 +60,7 @@ bool ShockDetection::detect()
         writeShockData("U;" + _linearAccXOut + ";" + _linearAccYOut + ";" + _linearAccZOut);
         // String dataTmp = "U;" + String(linearAccX) + ";" + String(linearAccY) + ";" + String(linearAccZ);
 
-#ifdef DEBUG
+#ifdef SHOCK_DEBUG_
         Serial.println("\n**URTO RILEVATO**");
         Serial.println(readShockData());
 #endif

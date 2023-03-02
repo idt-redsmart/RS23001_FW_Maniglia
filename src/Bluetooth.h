@@ -1,13 +1,15 @@
 
-#ifndef _BLUETOOTH_H_
-#define _BLUETOOTH_H_
+#ifndef BLUETOOTH_H_
+#define BLUETOOTH_H_
 
 #include <def.h>
 #include <ShockDetection.h>
 #include <LoadCell.h>
+#include <Battery.h>
 
 extern ShockDetection Shock;
 extern LoadCell Scale;
+extern Battery Bat;
 
 
 class Bluetooth
@@ -24,7 +26,8 @@ public:
                   _BLE_boolKeepAlive("1daa0361-88a7-41cd-857d-a22ec7ded851", BLERead | BLENotify),
                   _BLE_arrayAuthentication("1daa0362-88a7-41cd-857d-a22ec7ded851", BLERead | BLEWrite, AUTHENTICATION_CHARATERISTIC_SIZE, true),
                   _BLE_StringShockDetect("1daa0363-88a7-41cd-857d-a22ec7ded851", BLERead | BLEWrite | BLENotify, SHOCK_DATA_SIZE, false),
-                  _BLE_StringWeight("1daa0364-88a7-41cd-857d-a22ec7ded851", BLERead | BLEWrite , LOADCELL_DATA_SIZE, false),
+                  _BLE_StringWeight("1daa0364-88a7-41cd-857d-a22ec7ded851", BLERead | BLEWrite , LOAD_CELL_DATA_SIZE, false),
+                  _BLE_StringBatteryLevel("1daa0365-88a7-41cd-857d-a22ec7ded851", BLERead | BLEWrite | BLENotify , BATTERY_DATA_SIZE, false),
                   _BLE_StringRequest("1daa0366-88a7-41cd-857d-a22ec7ded851", BLERead | BLEWrite , REQUEST_DATA_SIZE, false) {}
 
     void setup();
@@ -36,6 +39,7 @@ public:
     void poll() { BLE.poll(); }
     void writeShockDetect();
     void writeWeight();
+    void writeBatteryLevel();
 
 private:
     void _setupBLEdeviceName();
@@ -73,6 +77,8 @@ private:
     BLECharacteristic _BLE_StringShockDetect;
     // Load cell - Charateristic
     BLECharacteristic _BLE_StringWeight;
+    // Battery - Charateristic
+    BLECharacteristic _BLE_StringBatteryLevel;
     // Request from app - Charateristic
     BLECharacteristic _BLE_StringRequest;
 

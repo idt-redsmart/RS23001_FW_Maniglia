@@ -6,12 +6,16 @@ void Bluetooth::setup() // setup
 	// begin initialization
 	if (!BLE.begin())
 	{
-#ifdef DEBUG
+#ifdef BLUETOOTH_DEBUG_
 		Serial.println("starting BLE failed!");
-#endif // DEBUG
+#endif // BLUETOOTH_DEBUG_
 		while (1)
 			;
 	}
+
+#ifdef BLUETOOTH_DEBUG_
+	Serial.println("BLE setup OK");
+#endif
 
 	// set the local name and manufactuer data
 	// setupBLEdeviceName();
@@ -32,6 +36,7 @@ void Bluetooth::setup() // setup
 	_BLE_boardService.addCharacteristic(_BLE_arrayAuthentication);
 	_BLE_boardService.addCharacteristic(_BLE_StringShockDetect);
 	_BLE_boardService.addCharacteristic(_BLE_StringWeight);
+	_BLE_boardService.addCharacteristic(_BLE_StringBatteryLevel);
 	_BLE_boardService.addCharacteristic(_BLE_StringRequest);
 
 	// add the service
@@ -46,9 +51,9 @@ void Bluetooth::setup() // setup
 	_setupBLEmanufacturerData();
 	BLE.advertise();
 
-#ifdef DEBUG
+#ifdef BLUETOOTH_DEBUG_
 	Serial.println("IoT-shield mac address: " + String(BLE.address()));
-#endif // DEBUG
+#endif // BLUETOOTH_DEBUG_
 }
 
 /*
@@ -68,7 +73,7 @@ void Bluetooth::_setupBLEdeviceName()
 	support = mac_add.substring(15, 17);
 	deviceName = deviceName + support;
 	_sBleLocalName = deviceName;
-	DEBUG.println("deviceName:" + String(deviceName.c_str()));
+	Serial.println("deviceName:" + String(deviceName.c_str()));
 	BLE.setLocalName(deviceName.c_str());
 }
 
@@ -111,17 +116,17 @@ void Bluetooth::_setupBLEmanufacturerData()
 			break;
 		}
 	}
-#ifdef DEBUG
+#ifdef BLUETOOTH_DEBUG_
 
-	DEBUG.print("Manufacturer data value:");
+	Serial.print("Manufacturer data value:");
 	for (int i = 0; i < manuf_array_effective_len; i++)
 	{
-		DEBUG.print(manuf_array[i], HEX);
+		Serial.print(manuf_array[i], HEX);
 		if (i < manuf_array_effective_len - 1)
-			DEBUG.print("-");
+			Serial.print("-");
 	}
-	DEBUG.println("");
-#endif // DEBUG
+	Serial.println("");
+#endif // BLUETOOTH_DEBUG_
 
 	BLE.setManufacturerData(manuf_array, manuf_array_effective_len);
 }
@@ -149,6 +154,7 @@ void Bluetooth::eraseAllBLEcharateristics()
 	_eraseBLEcharateristic(_BLE_boolKeepAlive);
 	_eraseBLEcharateristic(_BLE_StringShockDetect);
 	_eraseBLEcharateristic(_BLE_StringWeight);
+	_eraseBLEcharateristic(_BLE_StringBatteryLevel);
 	_eraseBLEcharateristic(_BLE_StringRequest);
 }
 
@@ -156,16 +162,16 @@ void Bluetooth::printConnectedCentral(BLEDevice _central)
 {
 	if (_central.connected())
 	{
-#ifdef DEBUG
-		DEBUG.print("New central device connected. MAC ADDRESS:");
-		DEBUG.println(_central.address());
-#endif // DEBUG
+#ifdef BLUETOOTH_DEBUG_
+		Serial.print("New central device connected. MAC ADDRESS:");
+		Serial.println(_central.address());
+#endif // BLUETOOTH_DEBUG_
 	}
 	else
 	{
-#ifdef DEBUG
-		DEBUG.println("Central device disconnected");
-#endif // DEBUG
+#ifdef BLUETOOTH_DEBUG_
+		Serial.println("Central device disconnected");
+#endif // BLUETOOTH_DEBUG_
 	}
 }
 
@@ -238,22 +244,22 @@ void Bluetooth::authentication()
 
 			_BLE_arrayAuthentication.readValue(aInData, AUTHENTICATION_CHARATERISTIC_SIZE);
 
-#ifdef DEBUG
-			DEBUG.print("authentication in value:");
+#ifdef BLUETOOTH_DEBUG_
+			Serial.print("authentication in value:");
 			for (int i = 0; i < 6; i++)
 			{
-				DEBUG.print(aInData[i], HEX);
-				DEBUG.print(".");
+				Serial.print(aInData[i], HEX);
+				Serial.print(".");
 			}
-			DEBUG.println("");
+			Serial.println("");
 
-			DEBUG.print("mac address value:");
+			Serial.print("mac address value:");
 			for (int i = 0; i < 6; i++)
 			{
-				DEBUG.print(macAddress[i], HEX);
-				DEBUG.print(".");
+				Serial.print(macAddress[i], HEX);
+				Serial.print(".");
 			}
-			DEBUG.println();
+			Serial.println();
 
 #endif
 
@@ -263,8 +269,8 @@ void Bluetooth::authentication()
 			{
 				if(((aInData[i]-i)& 0xFF) != (macAddress[i]))
 				{
-					DEBUG.println(aInData[i],HEX);
-					DEBUG.println(aInData[i]-i,HEX);
+					Serial.println(aInData[i],HEX);
+					Serial.println(aInData[i]-i,HEX);
 					bEqual = false;
 				}
 			}*/
@@ -280,16 +286,16 @@ void Bluetooth::authentication()
 			{
 				aInData[0] = 0x31;
 				_bFLAG_Authenticated = true;
-#ifdef DEBUG
-				DEBUG.println("autentication success");
+#ifdef BLUETOOTH_DEBUG_
+				Serial.println("autentication success");
 #endif
 			}
 			// autentication failed
 			else
 			{
 				aInData[0] = 0x30;
-#ifdef DEBUG
-				DEBUG.println("autentication failed");
+#ifdef BLUETOOTH_DEBUG_
+				Serial.println("autentication failed");
 #endif
 			}
 
@@ -321,27 +327,33 @@ void Bluetooth::checkCentralConnected()
 
 void Bluetooth::writeShockDetect()
 {
-	if (_bFLAG_CentralConnected && _bFLAG_Authenticated && Shock.readNewData())
-	{
-		_BLE_StringShockDetect.writeValue(Shock.readShockData().c_str(), SHOCK_DATA_SIZE, false);
-		Shock.writeNewData(false);
-		Shock.writeShockData(SHOCK_DATA_DEFAULT_VALUE);
-	}
+	if (!_bFLAG_CentralConnected || !_bFLAG_Authenticated || !Shock.readNewData())
+		return;
+
+#ifdef BLUETOOTH_DEBUG_
+	Serial.println("Sending shock data: " + Shock.readShockData() + "\n");
+#endif
+
+	_BLE_StringShockDetect.writeValue(Shock.readShockData().c_str(), SHOCK_DATA_SIZE, false);
+	Shock.writeNewData(false);
+	Shock.writeShockData(SHOCK_DATA_DEFAULT_VALUE);
 }
 
 void Bluetooth::writeWeight()
 {
-	if (!_BLE_StringRequest.written())
-	{
+	if (!_BLE_StringRequest.written() || !_bFLAG_CentralConnected || !_bFLAG_Authenticated)
 		return;
-	}
 
 	char requestDataIn[1] = REQUEST_DATA_DEFAULT_VALUE;
 	_BLE_StringRequest.readValue(requestDataIn, REQUEST_DATA_SIZE);
 
 	if (requestDataIn[0] == 'P')
 	{
-		float tmpWeight = 18.73; // Scale.getWeight();
+#ifdef BLUETOOTH_DEBUG_
+		Serial.println("Request incoming: " + String(requestDataIn[0]) + "\n");
+#endif
+
+		float tmpWeight = Scale.getWeight();
 
 		int tmp = tmpWeight / 1;
 		String scaleDataTmp = "P;" + String(tmp);
@@ -352,10 +364,31 @@ void Bluetooth::writeWeight()
 
 		Scale.writeScaleData(scaleDataTmp + "." + String(tmp));
 
-		Serial.println("Scale data sent: " + Scale.readScaleData());
+#ifdef BLUETOOTH_DEBUG_
+		Serial.println("Sending load cell data: " + Scale.readScaleData() + "\n");
+#endif
 
-		_BLE_StringWeight.writeValue(Scale.readScaleData().c_str(), LOADCELL_DATA_SIZE, false);
+		_BLE_StringWeight.writeValue(Scale.readScaleData().c_str(), LOAD_CELL_DATA_SIZE, false);
 
 		_eraseBLEcharateristic(_BLE_StringRequest);
+	}
+}
+
+void Bluetooth::writeBatteryLevel()
+{
+	if (!_bFLAG_CentralConnected || !_bFLAG_Authenticated)
+		return;
+
+	Bat.startTimer();
+
+	if (Bat.fireTimer())
+	{
+		Bat.stopTimer();
+
+#ifdef BLUETOOTH_DEBUG_
+		// Serial.println("Sending battery level: " + Bat.getLevel() + "\n");
+#endif
+
+		_BLE_StringBatteryLevel.writeValue(Bat.getLevel().c_str(), BATTERY_DATA_SIZE, false);
 	}
 }
