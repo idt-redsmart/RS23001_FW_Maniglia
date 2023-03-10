@@ -9,9 +9,14 @@ FireTimer _findTimer;
 uint16_t _wait = 0;
 uint16_t _wait1 = 0;
 uint16_t _wait2 = 0;
-uint32_t _lastChange;
+uint8_t _n_start = 0;
+uint8_t _n_stop = 0;
+uint8_t _brightness = 0;
 uint8_t _color1;
 uint8_t _color2;
+bool _one_off = false;
+
+uint32_t _lastChange;
 bool _firstLoop = true;
 
 /*
@@ -48,6 +53,12 @@ void LedLoop()
 
         _wait2 = LED_ON_TIME_NOT_CON;
         _color2 = LED_COLOR_RED;
+
+        _n_start = 0;
+        _n_stop = 1;
+        _brightness = 120;
+
+        _one_off = false;
     }
     else if (BT.readFlagCentralConnected() && !BT.readFlagAuthenticated())
     {
@@ -56,105 +67,114 @@ void LedLoop()
 
         _wait2 = LED_ON_TIME;
         _color2 = LED_COLOR_RED;
+
+        _n_start = 0;
+        _n_stop = 1;
+        _brightness = 254;
+
+        _one_off = false;
     }
     else if (BT.readFlagCentralConnected() && BT.readFlagAuthenticated())
     {
-        _wait1 = LED_OFF_TIME;
-        _color1 = LED_COLOR_OFF;
+        if (!(BT.readFindReq() == 1 || BT.readFindReq() == 2))
+        {
+            _wait1 = LED_OFF_TIME;
+            _color1 = LED_COLOR_OFF;
 
-        _wait2 = LED_ON_TIME;
-        _color2 = LED_COLOR_GREEN;
+            _wait2 = LED_ON_TIME;
+            _color2 = LED_COLOR_GREEN;
+
+            _n_start = 0;
+            _n_stop = 1;
+            _brightness = 254;
+
+            _one_off = false;
+        }
+        else if (BT.readFindReq() == 1 || BT.readFindReq() == 2)
+        {
+            _wait1 = 499;
+            _color1 = LED_COLOR_OFF;
+
+            _wait2 = 501;
+            _color2 = LED_COLOR_BLUE;
+
+            _n_start = 0;
+            _n_stop = 1;
+            _brightness = 254;
+
+            _one_off = true;
+            _findTimer.start();
+        }
     }
 
-    if ((millis() - _lastChange > _wait))
+    // LED LOOP
+    if (!_one_off)
     {
-        _lastChange = millis();
-        if (_wait == _wait2)
+        if ((millis() - _lastChange > _wait))
         {
-            Serial.println("WAIT 1");
-            _wait = _wait1;
-            setColor(_color1);
-        }
-        else
-        {
-            Serial.println("WAIT 2");
-            _wait = _wait2;
-            setColor(_color2);
+            _lastChange = millis();
+            if (_wait == _wait2)
+            {
+                Serial.println("WAIT 1");
+                _wait = _wait1;
+                setColor(_n_start, _n_stop, _color1, _brightness);
+            }
+            else
+            {
+                Serial.println("WAIT 2");
+                _wait = _wait2;
+                setColor(_n_start, _n_stop, _color2, _brightness);
+            }
         }
     }
 
-    /*
-        if (!BT.readFlagCentralConnected()) // not connected
+    if (_one_off)
+    {
+        if (_findTimer.fire())
         {
-            Serial.println("Led loop not connected");
-            if ((millis() - _lastChange > _wait))
+            Serial.println("ONE OFF FIRE");
+            _findTimer.stop();
+            BT.writeFindReq(0);
+            _one_off = false;
+        }
+
+        if ((millis() - _lastChange > _wait))
+        {
+            _lastChange = millis();
+            if (_wait == _wait2)
             {
-                _lastChange = millis();
-                if (_wait == LED_ON_TIME_NOT_CON)
-                {
-                    _wait = LED_OFF_TIME_NOT_CON;
-                    setColor(LED_COLOR_OFF);
-                }
-                else
-                {
-                    _wait = LED_ON_TIME_NOT_CON;
-                    setColor(LED_COLOR_RED);
-                }
+                Serial.println("WAIT 1");
+                _wait = _wait1;
+                Led.SetPixelColor(0, 0, 0, _brightness);
+                Led.SetPixelColor(1, 0, 0, 0);
+                Led.Show();
+                // setColor(_n_start, _n_start, _color1, _brightness);
+                // setColor(_n_stop, _n_stop, _color2, _brightness);
+            }
+            else
+            {
+                Serial.println("WAIT 2");
+                _wait = _wait2;
+                Led.SetPixelColor(0, 0, 0, 0);
+                Led.SetPixelColor(1, 0, 0, _brightness);
+                Led.Show();
+
+                // setColor(_n_start, _n_start, _color2, _brightness);
+                // setColor(_n_stop, _n_stop, _color1, _brightness);
             }
         }
-        else // connected, not authenticated
-        {
-            Serial.println("Led loop connected");
-
-            if ((millis() - _lastChange > _wait))
-            {
-                _lastChange = millis();
-                if (_wait == LED_ON_TIME)
-                {
-                    _wait = LED_OFF_TIME;
-                    setColor(LED_COLOR_OFF);
-                }
-                else
-                {
-                    _wait = LED_ON_TIME;
-
-                    if (BT.readFlagAuthenticated()) // authenticated
-                    {
-                        Serial.println("Led loop auth");
-
-                        setColor(LED_COLOR_GREEN);
-
-                        while (BT.readFindReq() == 1 || BT.readFindReq() == 2)
-                        {
-                            _findTimer.start();
-
-                            setColor(0, LED_COLOR_BLUE);
-                            setColor(1, LED_COLOR_OFF);
-                            delay(400);
-                            setColor(0, LED_COLOR_OFF);
-                            setColor(1, LED_COLOR_BLUE);
-                            delay(100);
-
-                            if (_findTimer.fire())
-                            {
-                                _findTimer.stop();
-                                BT.writeFindReq(0);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        setColor(LED_COLOR_RED);
-                    }
-                }
-            }
-        }*/
+    }
 }
 
-void setColor(uint8_t n, uint8_t color)
+void setColor(uint8_t n_start, uint8_t n_stop, uint8_t color, uint8_t brightness)
 {
 
-    uint8_t r, g, b;
+    uint8_t r = 0;
+    uint8_t g = 0;
+    uint8_t b = 0;
+
+    // uint16_t val = 252 * brightness / 100;
+    // Serial.println("Val: " + String(val));
 
     switch (color)
     {
@@ -165,35 +185,43 @@ void setColor(uint8_t n, uint8_t color)
         break;
 
     case LED_COLOR_RED:
-        r = 254;
+        r = brightness;
         g = 0;
         b = 0;
         break;
 
     case LED_COLOR_GREEN:
         r = 0;
-        g = 254;
+        g = brightness;
         b = 0;
         break;
 
     case LED_COLOR_BLUE:
         r = 0;
         g = 0;
-        b = 254;
+        b = brightness;
         break;
 
     default:
         break;
     }
-    // Serial.println("RGB: " + String(r) + " " + String(g) + " " + String(b));
-    Led.SetPixelColor(n, r, g, b);
+
+    // constrain(r, 0, 254);
+    // constrain(g, 0, 254);
+    // constrain(b, 0, 254);
+
+    Serial.println("RGB: " + String(r) + " " + String(g) + " " + String(b));
+    for (int x = n_start; x <= n_stop; x++)
+        Led.SetPixelColor(x, g, r, b);
     Led.Show();
 }
 
 void setColor(uint8_t color)
 {
 
-    uint8_t r, g, b;
+    uint8_t r = 0;
+    uint8_t g = 0;
+    uint8_t b = 0;
 
     switch (color)
     {
@@ -227,11 +255,5 @@ void setColor(uint8_t color)
     // Serial.println("RGB: " + String(r) + " " + String(g) + " " + String(b));
     Led.SetPixelColor(0, g, r, b);
     Led.SetPixelColor(1, g, r, b);
-    Led.Show();
-}
-
-void setColor(uint8_t n, uint8_t r, uint8_t g, uint8_t b)
-{
-    Led.SetPixelColor(n, r, g, b);
     Led.Show();
 }

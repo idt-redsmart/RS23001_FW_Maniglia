@@ -56,11 +56,11 @@
 #define LED_PIN P0_10
 #define LED_NUM 2
 
-#define LED_ON_TIME_NOT_CON 200        // MS
-#define LED_OFF_TIME_NOT_CON 2800       // MS
-#define LED_ON_TIME 400        // MS
-#define LED_OFF_TIME 100       // MS
-#define LED_FIND_TIMER_VALUE 5 // SECONDI
+#define LED_ON_TIME_NOT_CON 200                            // MS
+#define LED_OFF_TIME_NOT_CON (15000 - LED_ON_TIME_NOT_CON) // MS
+#define LED_ON_TIME 200                                    // MS
+#define LED_OFF_TIME (5000 - LED_ON_TIME)                  // MS
+#define LED_FIND_TIMER_VALUE 5                             // SECONDI
 
 #define LED_COLOR_OFF 0
 #define LED_COLOR_RED 1

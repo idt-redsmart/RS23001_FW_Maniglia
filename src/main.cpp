@@ -28,11 +28,11 @@ void setup()
     nicla::begin();
     // Bat.setup();
 
-    // BHY2.begin(NICLA_STANDALONE);
+    BHY2.begin(NICLA_STANDALONE);
 
     // Scale.setup();
     BT.setup();
-    // Shock.setup();
+    Shock.setup();
     // StatusLed.setup();
 
     // testTimer.begin(10000);
@@ -44,8 +44,9 @@ void setup()
 
 void loop()
 {
+    LedLoop();
     // Update function should be continuously polled
-    // BHY2.update();
+    BHY2.update();
 
     BT.poll();
     BT.authentication();
@@ -58,7 +59,6 @@ void loop()
 
     // Shock.detect();
 
-    LedLoop();
 
     /*
     testTimer.start();

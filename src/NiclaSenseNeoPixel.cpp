@@ -50,7 +50,7 @@ void NiclaSenseNeoPixel::SetPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t
         }
         uint8_t *p = &_pPixels[n * 3];
 
-        Serial.println("RGB val g:" + String(g, BIN) + " - r:" + String(r, BIN) + " - b:" + String(b, BIN));
+        Serial.println("RGB val r:" + String(g, BIN) + " - g:" + String(r, BIN) + " - b:" + String(b, BIN));
 
         p[G_OFFSET] = g;
         p[R_OFFSET] = r; // R,G,B always stored

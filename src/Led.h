@@ -8,9 +8,9 @@
 // void setup();
 void LedLoop();
 
-void setColor(uint8_t n, uint8_t color); // color 0:off, 1:red, 2:green, 3:blue
+void setColor(uint8_t n_start, uint8_t n_stop, uint8_t color, uint8_t brightness); // color 0:off, 1:red, 2:green, 3:blue
 void setColor(uint8_t color);            // color 0:off, 1:red, 2:green, 3:blue
-void setColor(uint8_t n, uint8_t r, uint8_t g, uint8_t b);
+// void setColor(uint8_t n, uint8_t r, uint8_t g, uint8_t b);
 
 /*class Led
 {
