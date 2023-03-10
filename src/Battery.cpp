@@ -35,7 +35,7 @@ String Battery::getLevel()
 		return _batteryData;
 	}
 }
-
+/*
 void Led::setColor(uint16_t n, uint8_t color)
 {
 
@@ -71,3 +71,4 @@ void Led::setColor(uint16_t n, uint8_t color)
 	_led.SetPixelColor(n, r, g, b);
 	_led.Show();
 }
+*/

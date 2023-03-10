@@ -1,4 +1,5 @@
 #include "NiclaSenseNeoPixel.h"
+#include <Arduino.h>
 
 int NiclaSenseNeoPixel::Init()
 {
@@ -24,6 +25,7 @@ int NiclaSenseNeoPixel::Init()
     // Serial.println("MALLOC");
 
     // Serial.println("CLOCK INIT");
+    return 0;
 }
 
 /*!
@@ -48,7 +50,7 @@ void NiclaSenseNeoPixel::SetPixelColor(uint16_t n, uint8_t r, uint8_t g, uint8_t
         }
         uint8_t *p = &_pPixels[n * 3];
 
-        // Serial.println("RGB val g:" + String(g, BIN) + " - r:" + String(r, BIN) + " - b:" + String(b, BIN));
+        Serial.println("RGB val g:" + String(g, BIN) + " - r:" + String(r, BIN) + " - b:" + String(b, BIN));
 
         p[G_OFFSET] = g;
         p[R_OFFSET] = r; // R,G,B always stored
@@ -61,9 +63,6 @@ void NiclaSenseNeoPixel::Show()
 
     __disable_irq();
 
-    bool skip0 = 0;
-    bool skip1 = 0;
-
     for (uint32_t cbyte = 0; cbyte < _numBytes; cbyte++)
     {
 
@@ -73,22 +72,16 @@ void NiclaSenseNeoPixel::Show()
         {
 
             if (((currentByte >> cbit) & 0x1) == 1)
-            {
-                _write1(skip1);
-                skip1 = 0;
-            }
+                _write1();
             else
-            {
-                _write0(skip0);
-                skip0 = 0;
-            }
+                _write0();
         }
     }
 
     __enable_irq();
 }
 
-void NiclaSenseNeoPixel::_write1(uint8_t i)
+void NiclaSenseNeoPixel::_write1()
 {
 
     _pin.write(1);
@@ -105,7 +98,7 @@ void NiclaSenseNeoPixel::_write1(uint8_t i)
     _pin.write(1);
 }
 
-void NiclaSenseNeoPixel::_write0(uint8_t i)
+void NiclaSenseNeoPixel::_write0()
 {
 
     _pin.write(1);

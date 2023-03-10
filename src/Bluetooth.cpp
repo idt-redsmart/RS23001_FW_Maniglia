@@ -54,6 +54,8 @@ void Bluetooth::setup() // setup
 #ifdef BLUETOOTH_DEBUG_
 	Serial.println("IoT-shield mac address: " + String(BLE.address()));
 #endif // BLUETOOTH_DEBUG_
+
+	_keepAliveTimer.begin(KEEP_ALIVE_TIMER_VALUE * 1000);
 }
 
 /*
@@ -325,6 +327,25 @@ void Bluetooth::checkCentralConnected()
 	}
 }
 
+void Bluetooth::keepAlive()
+{
+	if (!_bFLAG_CentralConnected || !_bFLAG_Authenticated)
+		return;
+
+	_keepAliveTimer.start();
+	if (_keepAliveTimer.fire())
+	{
+		_keepAliveTimer.stop();
+
+		_bFLAG_KeepAlive = !_bFLAG_KeepAlive;
+		_BLE_boolKeepAlive.writeValue(_bFLAG_KeepAlive);
+
+#ifdef BLUETOOTH_DEBUG_
+		Serial.println("Keep alive: " + String(_bFLAG_KeepAlive) + "\n");
+#endif
+	}
+}
+
 void Bluetooth::writeShockDetect()
 {
 	if (!_bFLAG_CentralConnected || !_bFLAG_Authenticated || !Shock.readNewData())
@@ -339,56 +360,142 @@ void Bluetooth::writeShockDetect()
 	Shock.writeShockData(SHOCK_DATA_DEFAULT_VALUE);
 }
 
-void Bluetooth::writeWeight()
+void Bluetooth::readRequest()
 {
 	if (!_BLE_StringRequest.written() || !_bFLAG_CentralConnected || !_bFLAG_Authenticated)
 		return;
 
-	char requestDataIn[1] = REQUEST_DATA_DEFAULT_VALUE;
+	char requestDataIn[2]; // = REQUEST_DATA_DEFAULT_VALUE;
 	_BLE_StringRequest.readValue(requestDataIn, REQUEST_DATA_SIZE);
+	// Serial.println("REQ IN: " + String(requestDataIn));
 
-	if (requestDataIn[0] == 'P')
-	{
-#ifdef BLUETOOTH_DEBUG_
-		Serial.println("Request incoming: " + String(requestDataIn[0]) + "\n");
-#endif
-
-		float tmpWeight = Scale.getWeight();
-
-		int tmp = tmpWeight / 1;
-		String scaleDataTmp = "P;" + String(tmp);
-		tmpWeight -= tmp;
-		tmpWeight = tmpWeight * 100;
-
-		tmp = tmpWeight / 1;
-
-		Scale.writeScaleData(scaleDataTmp + "." + String(tmp));
+	if (requestDataIn[0] == 'P' && requestDataIn[1] == '0')
+		writeWeight();
+	else if (requestDataIn[0] == 'F' && requestDataIn[1] == '0')
+		findRequest(0);
+	else if (requestDataIn[0] == 'F' && requestDataIn[1] == '1')
+		findRequest(1);
 
 #ifdef BLUETOOTH_DEBUG_
-		Serial.println("Sending load cell data: " + Scale.readScaleData() + "\n");
+	Serial.println("Request incoming: " + String(requestDataIn[0]) + String(requestDataIn[1]) + "\n");
 #endif
 
-		_BLE_StringWeight.writeValue(Scale.readScaleData().c_str(), LOAD_CELL_DATA_SIZE, false);
-
-		_eraseBLEcharateristic(_BLE_StringRequest);
-	}
+	_eraseBLEcharateristic(_BLE_StringRequest);
 }
 
-void Bluetooth::writeBatteryLevel()
+void Bluetooth::writeWeight()
 {
-	if (!_bFLAG_CentralConnected || !_bFLAG_Authenticated)
-		return;
+	float tmpWeight = Scale.getWeight();
 
-	Bat.startTimer();
+	int tmp = tmpWeight / 1;
+	String scaleDataTmp = "P;" + String(tmp);
+	tmpWeight -= tmp;
+	tmpWeight = tmpWeight * 100;
 
-	if (Bat.fireTimer())
-	{
-		Bat.stopTimer();
+	tmp = tmpWeight / 1;
+
+	Scale.writeScaleData(scaleDataTmp + "." + String(tmp));
 
 #ifdef BLUETOOTH_DEBUG_
-		// Serial.println("Sending battery level: " + Bat.getLevel() + "\n");
+	Serial.println("Sending load cell data: " + Scale.readScaleData() + "\n");
 #endif
 
-		_BLE_StringBatteryLevel.writeValue(Bat.getLevel().c_str(), BATTERY_DATA_SIZE, false);
-	}
+	_BLE_StringWeight.writeValue(Scale.readScaleData().c_str(), LOAD_CELL_DATA_SIZE, false);
 }
+
+void Bluetooth::findRequest(bool sound)
+{
+	// StatusLed.startFindTimer();
+
+	if (!sound)
+	{
+		_findReq = 1;
+
+		// while (!_findTimer.fire())
+		// {
+		// 	StatusLed.setColor(0, LED_COLOR_BLUE);
+		// 	StatusLed.setColor(1, LED_COLOR_OFF);
+		// 	delay(400);
+		// 	StatusLed.setColor(0, LED_COLOR_OFF);
+		// 	StatusLed.setColor(1, LED_COLOR_BLUE);
+		// 	delay(100);
+		// }
+		// 	StatusLed.setColor(0, LED_COLOR_OFF);
+		// 	StatusLed.setColor(1, LED_COLOR_OFF);
+	}
+	else
+	{
+		_findReq = 2;
+	}
+
+	// _findTimer.stop();
+
+	/*
+	if (StatusLed.fireTimer())
+	{
+		StatusLed.stopTimer();
+		StatusLed.setColor(0, LED_COLOR_OFF);
+	}
+	else
+	{
+		StatusLed.setColor(0, LED_COLOR_OFF);
+		delay(50);
+		StatusLed.setColor(0, LED_COLOR_BLUE);
+	}*/
+}
+
+// void Bluetooth::writeBatteryLevel()
+// {
+// 	if (!_bFLAG_CentralConnected || !_bFLAG_Authenticated)
+// 		return;
+
+// 	if (!_firstWeightSent)
+// 	{
+// 		_firstWeightSent = true;
+
+// 		Bat.getStringBatteryLevel();
+// 		String data_tmp = Bat.readBatteryData(); //"B;OUT";  // Bat.getStringBatteryLevel();
+
+// 		_BLE_StringBatteryLevel.writeValue(data_tmp.c_str(), BATTERY_DATA_SIZE, false);
+
+// 		Bat.writeBatteryData("");
+
+// #ifdef BLUETOOTH_DEBUG_
+// 		Serial.println(/*"\n*/ "Fault reg:");
+// 		for (int x = 7; x >= 0; x--)
+// 			Serial.print(bitRead(nicla::_pmic.readByte(BQ25120A_ADDRESS, BQ25120A_FAULTS), x));
+// 		Serial.print("\n");
+
+// 		Serial.println("Sending battery level: " + data_tmp);
+// 		// Serial.println("Fault register:");
+// 		// Serial.println(nicla::_pmic.readByte(BQ25120A_ADDRESS, BQ25120A_FAULTS), BIN);
+// #endif
+// 	}
+// 	else
+// 	{
+// 		Bat.startTimer();
+// 		if (Bat.fireTimer())
+// 		{
+// 			Bat.stopTimer();
+
+// 			Bat.getStringBatteryLevel();
+// 			String data_tmp = Bat.readBatteryData(); //"B;OUT";  // Bat.getStringBatteryLevel();
+
+// 			_BLE_StringBatteryLevel.writeValue(data_tmp.c_str(), BATTERY_DATA_SIZE, false);
+
+// 			Bat.writeBatteryData("");
+
+// #ifdef BLUETOOTH_DEBUG_
+// 			Serial.println(/*"\n*/ "Fault reg: 0x01");
+// 			for (int x = 7; x >= 0; x--)
+// 				Serial.print(bitRead(nicla::_pmic.readByte(BQ25120A_ADDRESS, BQ25120A_FAULTS), x));
+// 			Serial.print("\n");
+
+// 			Serial.println("Sending battery level: " + data_tmp);
+// 			// Serial.println("Fault register:");
+// 			// Serial.println(nicla::_pmic.readByte(BQ25120A_ADDRESS, BQ25120A_FAULTS), BIN);
+
+// #endif
+// 		}
+// 	}
+// }

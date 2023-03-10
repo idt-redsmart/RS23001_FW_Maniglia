@@ -4,70 +4,76 @@
 #include <LoadCell.h>
 #include <ShockDetection.h>
 #include <Battery.h>
+#include <Led.h>
 
 LoadCell Scale;
 Bluetooth BT;
 ShockDetection Shock;
-Battery Bat;
-Led StatusLed;
+// Battery Bat;
+// Led StatusLed;
+NiclaSenseNeoPixel Led(LED_NUM);
 
-FireTimer batt;
+
+// FireTimer testTimer;
+// int provaled = 0;
 
 void setup()
 {
 // put your setup code here, to run once:
 #ifdef MAIN_DEBUG_
     Serial.begin(115200);
+    Serial1.begin(115200);
 #endif
-    // delay(500);
-
-    // Serial.println("BEGIN");
 
     nicla::begin();
-    Bat.setup();
+    // Bat.setup();
 
-    BHY2.begin(NICLA_STANDALONE);
+    // BHY2.begin(NICLA_STANDALONE);
 
     // Scale.setup();
     BT.setup();
-    Shock.setup();
-    StatusLed.setup();
+    // Shock.setup();
+    // StatusLed.setup();
 
-    batt.begin(30000);
-    Bat.beginTimer();
-
-    // batt.start();
+    // testTimer.begin(10000);
+    // testTimer.start();
+    // _led.Init();
+    // delay(20);
+    // setColor(LED_COLOR_OFF);
 }
-
-int provaled = 0;
 
 void loop()
 {
     // Update function should be continuously polled
-    BHY2.update();
+    // BHY2.update();
 
     BT.poll();
     BT.authentication();
     BT.checkCentralConnected();
+    BT.keepAlive();
     BT.writeShockDetect();
-    BT.writeWeight();
-    BT.writeBatteryLevel();
+    // BT.writeWeight();
+    BT.readRequest();
+    // BT.writeBatteryLevel();
 
-    Shock.detect();
+    // Shock.detect();
 
-    batt.start();
-    if (batt.fire())
+    LedLoop();
+
+    /*
+    testTimer.start();
+    if (testTimer.fire())
     {
-        batt.stop();
+        testTimer.stop();
         // Serial.println("BATTERIA: " + String(nicla::getBatteryStatus()));
-
-        if (provaled > 3)
-        {
+        if (provaled > 2)
             provaled = 0;
-        }
+        else
+            provaled++;
 
+        Serial.println("led++: " + String(provaled));
         StatusLed.setColor(0, provaled);
-    }
+    }*/
 }
 
 /*

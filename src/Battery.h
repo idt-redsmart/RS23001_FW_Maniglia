@@ -20,7 +20,7 @@ private:
 
     String _batteryData = BATTERY_DATA_DEFAULT_VALUE;
 };
-
+/*
 class Led
 {
 public:
@@ -33,5 +33,7 @@ public:
 
 private:
     NiclaSenseNeoPixel _led;
-};
+};*/
+
+
 #endif

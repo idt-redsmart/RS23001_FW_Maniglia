@@ -10,7 +10,7 @@
 extern ShockDetection Shock;
 extern LoadCell Scale;
 extern Battery Bat;
-
+// extern Led StatusLed;
 
 class Bluetooth
 {
@@ -21,14 +21,16 @@ public:
                   _BLE_CONST_firmwareRevisionString("2A26", BLERead, FW_VERSION),
                   _BLE_CONST_hardwareRevisionString("2A27", BLERead, HW_VERSION),
                   _BLE_CONST_manufacturerNameString("2A29", BLERead, "idtsolution.com"),
-                  //board service
+                  // board service
                   _BLE_boardService("1daa0360-88a7-41cd-857d-a22ec7ded851"),
                   _BLE_boolKeepAlive("1daa0361-88a7-41cd-857d-a22ec7ded851", BLERead | BLENotify),
                   _BLE_arrayAuthentication("1daa0362-88a7-41cd-857d-a22ec7ded851", BLERead | BLEWrite, AUTHENTICATION_CHARATERISTIC_SIZE, true),
                   _BLE_StringShockDetect("1daa0363-88a7-41cd-857d-a22ec7ded851", BLERead | BLEWrite | BLENotify, SHOCK_DATA_SIZE, false),
-                  _BLE_StringWeight("1daa0364-88a7-41cd-857d-a22ec7ded851", BLERead | BLEWrite , LOAD_CELL_DATA_SIZE, false),
-                  _BLE_StringBatteryLevel("1daa0365-88a7-41cd-857d-a22ec7ded851", BLERead | BLEWrite | BLENotify , BATTERY_DATA_SIZE, false),
-                  _BLE_StringRequest("1daa0366-88a7-41cd-857d-a22ec7ded851", BLERead | BLEWrite , REQUEST_DATA_SIZE, false) {}
+                  _BLE_StringWeight("1daa0364-88a7-41cd-857d-a22ec7ded851", BLERead | BLEWrite, LOAD_CELL_DATA_SIZE, false),
+                  _BLE_StringBatteryLevel("1daa0365-88a7-41cd-857d-a22ec7ded851", BLERead | BLEWrite | BLENotify, BATTERY_DATA_SIZE, false),
+                  _BLE_StringRequest("1daa0366-88a7-41cd-857d-a22ec7ded851", BLERead | BLEWrite, REQUEST_DATA_SIZE, false)
+    {
+    }
 
     void setup();
     void authentication();
@@ -37,20 +39,36 @@ public:
     byte StringToHEX_int(unsigned char *hex_ptr);
     void checkCentralConnected();
     void poll() { BLE.poll(); }
+
+    void keepAlive();
+    void readRequest();
     void writeShockDetect();
     void writeWeight();
     void writeBatteryLevel();
+    void findRequest(bool sound); // 0-sound off   1-sound on
+
+    bool readFlagCentralConnected() { return _bFLAG_CentralConnected; }
+    bool readFlagAuthenticated() { return _bFLAG_Authenticated; }
+
+    int readFindReq() { return _findReq; }
+    void writeFindReq(int tmp) { _findReq = tmp; }
 
 private:
     void _setupBLEdeviceName();
     void _setupBLEmanufacturerData();
     void _eraseBLEcharateristic(BLECharacteristic &BLECharacteristic);
 
+    FireTimer _keepAliveTimer;
+
     String _sBleLocalName = "";
 
     bool _bFLAG_CentralConnected; // true = central connected, false = central NOT connected
     bool _bFLAG_KeepAlive;
     bool _bFLAG_Authenticated;
+
+    bool _firstWeightSent = false;
+
+    int _findReq = 0; // 0:no   1:light only    2:light and sound
 
     // DEVICE INFO SERVICE
     BLEService _BLE_deviceInformationService;
@@ -81,7 +99,6 @@ private:
     BLECharacteristic _BLE_StringBatteryLevel;
     // Request from app - Charateristic
     BLECharacteristic _BLE_StringRequest;
-
 };
 
 #endif

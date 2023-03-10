@@ -1,7 +1,7 @@
 #ifndef NICLA_NEOPIXEL_H
 #define NICLA_NEOPIXEL_H
 
-// #include <Arduino.h>
+#include <Arduino.h>
 #include <mbed.h>
 
 
@@ -20,7 +20,7 @@ class NiclaSenseNeoPixel{
 
 
 public:
-	NiclaSenseNeoPixel(uint16_t LedNum): _pin(digitalPinToPinName(0)) { _numLEDs = LedNum;}
+	NiclaSenseNeoPixel(uint16_t LedNum): _pin(P0_10) { _numLEDs = LedNum;}
 	~NiclaSenseNeoPixel(){ free(_pPixels);}
 
 	int Init();
@@ -30,10 +30,11 @@ public:
 
 	void Show();
 
+
 private:
 
-	void _write1(uint8_t i);
-	void _write0(uint8_t i);
+	void _write1();
+	void _write0();
 
     uint8_t _brightness = 0;			 	///< Strip brightness 0-255 (stored as +1)    
  	uint16_t _numLEDs = 0;   				///< Number of RGB LEDs in strip
