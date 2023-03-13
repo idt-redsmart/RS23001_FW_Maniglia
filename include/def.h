@@ -14,7 +14,7 @@
 #include <HX711.h>
 
 // LED
-#include <NiclaSenseNeoPixel.h>
+#include <Led/NiclaSenseNeoPixel.h>
 
 extern void dbg(int index, String str);
 
@@ -27,10 +27,10 @@ extern void dbg(int index, String str);
 #define LED_DEBUG_
 
 // LOAD CELL
-#define LOAD_CELL_A_DOUT_PIN 1
-#define LOAD_CELL_A_SCK_PIN 2
-#define LOAD_CELL_B_DOUT_PIN 3
-#define LOAD_CELL_B_SCK_PIN 4
+#define LOAD_CELL_A_DOUT_PIN P0_1
+#define LOAD_CELL_A_SCK_PIN P0_2
+#define LOAD_CELL_B_DOUT_PIN P0_3
+#define LOAD_CELL_B_SCK_PIN P0_4
 #define LOAD_CELL_CALIBRATION_FACTOR 100
 #define LOAD_CELL_DATA_SIZE 7
 #define LOAD_CELL_DATA_DEFAULT_VALUE "P;00.00"
@@ -38,8 +38,8 @@ extern void dbg(int index, String str);
 // BLE
 // Local name
 #define BLE_LOCAL_NAME_PREFIX "RS23001"
-#define FW_VERSION "1.1"
-#define HW_VERSION "1.1"
+#define FW_VERSION "1.0"
+#define HW_VERSION "1.0"
 
 #define AUTHENTICATION_CHARATERISTIC_SIZE 50 // 50 byte
 
@@ -85,8 +85,7 @@ extern void dbg(int index, String str);
 #define LED_COLOR_BLUE 3
 // #define LED_COLOR_BLUE_PULSE 4
 
-
-//DBG
+// DBG
 #define DBG_MAIN 0
 #define DBG_BATTERY 1
 #define DBG_BLUETOOTH 2

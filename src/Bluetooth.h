@@ -6,12 +6,7 @@
 #include <ShockDetection.h>
 #include <LoadCell.h>
 #include <BatteryIntfc.h>
-
-
-extern ShockDetection Shock;
-extern LoadCell Scale;
-extern BatteryIntfc Battery;
-// extern Led StatusLed;
+#include <Led/Led.h>
 
 extern uint8_t ledLoopPhase;
 extern bool ledStatusUpdated;
@@ -58,10 +53,6 @@ public:
     inline void writeFindReq(int tmp) { _findReq = tmp; }
 
 private:
-    void _setupBLEdeviceName();
-    void _setupBLEmanufacturerData();
-    void _eraseBLEcharateristic(BLECharacteristic &BLECharacteristic);
-
     FireTimer _keepAliveTimer;
 
     String _sBleLocalName = "";
@@ -103,6 +94,11 @@ private:
     BLECharacteristic _BLE_StringBatteryLevel;
     // Request from app - Charateristic
     BLECharacteristic _BLE_StringRequest;
+
+
+    void _setupBLEdeviceName();
+    void _setupBLEmanufacturerData();
+    void _eraseBLEcharateristic(BLECharacteristic &BLECharacteristic);
 };
 
 #endif

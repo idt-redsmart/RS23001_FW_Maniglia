@@ -1,4 +1,4 @@
-#include "NiclaSenseNeoPixel.h"
+#include <Led/NiclaSenseNeoPixel.h>
 #include <Arduino.h>
 
 int NiclaSenseNeoPixel::Init()

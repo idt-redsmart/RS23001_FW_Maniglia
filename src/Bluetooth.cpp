@@ -1,6 +1,11 @@
 
 #include <Bluetooth.h>
 
+extern StatusLed Led;
+extern ShockDetection Shock;
+extern LoadCell Scale;
+extern BatteryIntfc Battery;
+
 void Bluetooth::setup() // setup
 {
 	// begin initialization
