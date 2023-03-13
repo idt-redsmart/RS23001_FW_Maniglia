@@ -4,11 +4,17 @@
 
 #include <def.h>
 
-class Battery
+class BatteryIntfc
 {
 public:
     void setup();
     String getLevel();
+    int getBatteryStatus() { return nicla::getBatteryStatus() * 20; }
+    void readReg();
+    void disableCharge();
+
+    void writeData(String str) { _data = str; }
+    String readData() { return _data; }
 
     void beginTimer() { _sendLevel.begin(BATTERY_FREQ_DATA_SEND * 1000); }
     void startTimer() { _sendLevel.start(); }
@@ -18,22 +24,8 @@ public:
 private:
     FireTimer _sendLevel;
 
-    String _batteryData = BATTERY_DATA_DEFAULT_VALUE;
+    void _readBit(uint8_t tmp);
+    String _data = BATTERY_DATA_DEFAULT_VALUE;
 };
-/*
-class Led
-{
-public:
-    Led() : _led(LED_NUM) {}
-
-    void setup() { _led.Init(); }
-
-    void setColor(uint16_t n, uint8_t color); //color 0:red, 1:green, 2:blue
-    
-
-private:
-    NiclaSenseNeoPixel _led;
-};*/
-
 
 #endif

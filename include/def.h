@@ -1,3 +1,5 @@
+#ifndef DEF_H
+#define DEF_H
 
 // MAIN
 #include <Arduino.h>
@@ -13,6 +15,16 @@
 
 // LED
 #include <NiclaSenseNeoPixel.h>
+
+extern void dbg(int index, String str);
+
+// DEBUG
+#define MAIN_DEBUG_
+#define BATTERY_DEBUG_
+#define BLUETOOTH_DEBUG_
+#define LOAD_CELL_DEBUG_
+#define SHOCK_DEBUG_
+#define LED_DEBUG_
 
 // LOAD CELL
 #define LOAD_CELL_A_DOUT_PIN 1
@@ -62,15 +74,24 @@
 #define LED_OFF_TIME (5000 - LED_ON_TIME)                  // MS
 #define LED_FIND_TIMER_VALUE 5                             // SECONDI
 
+#define LED_STATUS_NOT_CONNECTED 0
+#define LED_STATUS_NOT_AUTH 1
+#define LED_STATUS_AUTH 2
+#define LED_STATUS_FIND 3
+
 #define LED_COLOR_OFF 0
 #define LED_COLOR_RED 1
 #define LED_COLOR_GREEN 2
 #define LED_COLOR_BLUE 3
 // #define LED_COLOR_BLUE_PULSE 4
 
-// DEBUG
-#define MAIN_DEBUG_
-#define BATTERY_DEBUG_
-#define BLUETOOTH_DEBUG_
-#define LOAD_CELL_DEBUG_
-#define SHOCK_DEBUG_
+
+//DBG
+#define DBG_MAIN 0
+#define DBG_BATTERY 1
+#define DBG_BLUETOOTH 2
+#define DBG_LOAD_CELL 3
+#define DBG_SHOCK 4
+#define DBG_LED 5
+
+#endif

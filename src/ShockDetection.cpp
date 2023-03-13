@@ -6,9 +6,7 @@ void ShockDetection::setup()
     _linearAcc.begin(15, 0);
     _debounce_timer.begin(SHOCK_DEBOUNCE_TIME);
 
-    #ifdef SHOCK_DEBUG_
-    Serial.println("Accelerometer setup OK");
-#endif
+    dbg(DBG_SHOCK, "Accelerometer setup OK");
 }
 
 bool ShockDetection::detect()
@@ -37,7 +35,7 @@ bool ShockDetection::detect()
 
     // String accData = "X: " + String(linearAccX) + "\tY: " + String(linearAccY) + "\tZ: " + String(linearAccZ);
     // String accData = "ACC:\tX:\t" + String(linearAcc.x()) + "\tY:\t" + linearAcc.y() + "\tZ:\t" + linearAcc.z();
-    // Serial.println(accData);
+    // dbg(DBG_SHOCK, accData);
     // delay(100);
 
     if ((linearAccX > SHOCK_THRESHOLD || linearAccY > SHOCK_THRESHOLD || linearAccZ > SHOCK_THRESHOLD) && _debounce_timer.fire())
@@ -60,10 +58,8 @@ bool ShockDetection::detect()
         writeShockData("U;" + _linearAccXOut + ";" + _linearAccYOut + ";" + _linearAccZOut);
         // String dataTmp = "U;" + String(linearAccX) + ";" + String(linearAccY) + ";" + String(linearAccZ);
 
-#ifdef SHOCK_DEBUG_
-        Serial.println("\n**URTO RILEVATO**");
-        Serial.println(readShockData());
-#endif
+        dbg(DBG_SHOCK, "\n**URTO RILEVATO**");
+        dbg(DBG_SHOCK, readShockData());
 
         return true;
     }

@@ -3,19 +3,22 @@
 #include <Bluetooth.h>
 #include <LoadCell.h>
 #include <ShockDetection.h>
-#include <Battery.h>
+#include <BatteryIntfc.h>
 #include <Led.h>
 
 LoadCell Scale;
 Bluetooth BT;
 ShockDetection Shock;
-// Battery Bat;
-// Led StatusLed;
-NiclaSenseNeoPixel Led(LED_NUM);
+BatteryIntfc Battery;
+StatusLed Led;
 
+uint8_t ledLoopPhase = 0;
+bool ledStatusUpdated = false;
 
 // FireTimer testTimer;
 // int provaled = 0;
+
+void dbg(int index, String str);
 
 void setup()
 {
@@ -26,7 +29,7 @@ void setup()
 #endif
 
     nicla::begin();
-    // Bat.setup();
+    // Battery.setup();
 
     BHY2.begin(NICLA_STANDALONE);
 
@@ -44,7 +47,7 @@ void setup()
 
 void loop()
 {
-    LedLoop();
+    Led.loop();
     // Update function should be continuously polled
     BHY2.update();
 
@@ -57,24 +60,60 @@ void loop()
     BT.readRequest();
     // BT.writeBatteryLevel();
 
-    // Shock.detect();
-
-
-    /*
-    testTimer.start();
-    if (testTimer.fire())
-    {
-        testTimer.stop();
-        // Serial.println("BATTERIA: " + String(nicla::getBatteryStatus()));
-        if (provaled > 2)
-            provaled = 0;
-        else
-            provaled++;
-
-        Serial.println("led++: " + String(provaled));
-        StatusLed.setColor(0, provaled);
-    }*/
+    Shock.detect();
 }
+
+void dbg(int index, String str)         //0:MAIN, 1:BATTERY, 2:BLE, 3:LOADCELL, 4:SHOCK, 5:LED
+{
+    switch (index)
+    {
+    case DBG_MAIN:
+#ifdef MAIN_DEBUG_
+        Serial.println(str);
+#endif
+        break;
+    case DBG_BATTERY:
+#ifdef BATTERY_DEBUG_
+        Serial.println(str);
+#endif
+        break;
+    case DBG_BLUETOOTH:
+#ifdef BLUETOOTH_DEBUG_
+        Serial.println(str);
+#endif
+        break;
+    case DBG_LOAD_CELL:
+#ifdef LOAD_CELL_DEBUG_
+        Serial.println(str);
+#endif
+        break;
+    case DBG_SHOCK:
+#ifdef SHOCK_DEBUG_
+        Serial.println(str);
+#endif
+        break;
+    case DBG_LED:
+#ifdef LED_DEBUG_
+        Serial.println(str);
+#endif
+        break;
+    }
+}
+
+/*
+testTimer.start();
+if (testTimer.fire())
+{
+    testTimer.stop();
+    // Serial.println("BATTERIA: " + String(nicla::getBatteryStatus()));
+    if (provaled > 2)
+        provaled = 0;
+    else
+        provaled++;
+
+    Serial.println("led++: " + String(provaled));
+    StatusLed.setColor(0, provaled);
+}*/
 
 /*
 #include <BlockDevice.h>

@@ -6,16 +6,12 @@ void Bluetooth::setup() // setup
 	// begin initialization
 	if (!BLE.begin())
 	{
-#ifdef BLUETOOTH_DEBUG_
-		Serial.println("starting BLE failed!");
-#endif // BLUETOOTH_DEBUG_
+		dbg(DBG_BLUETOOTH, "starting BLE failed!");
 		while (1)
 			;
 	}
 
-#ifdef BLUETOOTH_DEBUG_
-	Serial.println("BLE setup OK");
-#endif
+	dbg(DBG_BLUETOOTH, "BLE setup OK");
 
 	// set the local name and manufactuer data
 	// setupBLEdeviceName();
@@ -51,9 +47,7 @@ void Bluetooth::setup() // setup
 	_setupBLEmanufacturerData();
 	BLE.advertise();
 
-#ifdef BLUETOOTH_DEBUG_
-	Serial.println("IoT-shield mac address: " + String(BLE.address()));
-#endif // BLUETOOTH_DEBUG_
+	dbg(DBG_BLUETOOTH, "IoT-shield mac address: " + String(BLE.address()));
 
 	_keepAliveTimer.begin(KEEP_ALIVE_TIMER_VALUE * 1000);
 }
@@ -75,7 +69,7 @@ void Bluetooth::_setupBLEdeviceName()
 	support = mac_add.substring(15, 17);
 	deviceName = deviceName + support;
 	_sBleLocalName = deviceName;
-	Serial.println("deviceName:" + String(deviceName.c_str()));
+	dbg(DBG_BLUETOOTH, "deviceName:" + String(deviceName.c_str()));
 	BLE.setLocalName(deviceName.c_str());
 }
 
@@ -288,26 +282,27 @@ void Bluetooth::authentication()
 			{
 				aInData[0] = 0x31;
 				_bFLAG_Authenticated = true;
-#ifdef BLUETOOTH_DEBUG_
-				Serial.println("autentication success");
-#endif
+				ledLoopPhase = 2;
+				ledStatusUpdated = true;
+				dbg(DBG_LED, "LEDLOOP PHASE = 2");
+				dbg(DBG_BLUETOOTH, "autentication success");
 			}
 			// autentication failed
 			else
 			{
 				aInData[0] = 0x30;
-#ifdef BLUETOOTH_DEBUG_
-				Serial.println("autentication failed");
-#endif
+				dbg(DBG_BLUETOOTH, "autentication failed");
 			}
 
 			_BLE_arrayAuthentication.writeValue(aInData, AUTHENTICATION_CHARATERISTIC_SIZE, true);
 		}
 	}
 
-	if (!_bFLAG_CentralConnected)
+	if (!_bFLAG_CentralConnected && ledLoopPhase != 0)
 	{
 		_bFLAG_Authenticated = false;
+		ledLoopPhase = 0;
+		dbg(DBG_LED, "LEDLOOP PHASE = 0");
 	}
 }
 
@@ -325,6 +320,13 @@ void Bluetooth::checkCentralConnected()
 		if (_bFLAG_CentralConnected)
 			eraseAllBLEcharateristics();
 	}
+
+	if (_bFLAG_CentralConnected == 1 && ledLoopPhase == 0)
+	{
+		ledLoopPhase = 1;
+		ledStatusUpdated = true;
+		dbg(DBG_LED, "LEDLOOP PHASE = 1");
+	}
 }
 
 void Bluetooth::keepAlive()
@@ -340,9 +342,7 @@ void Bluetooth::keepAlive()
 		_bFLAG_KeepAlive = !_bFLAG_KeepAlive;
 		_BLE_boolKeepAlive.writeValue(_bFLAG_KeepAlive);
 
-#ifdef BLUETOOTH_DEBUG_
-		Serial.println("Keep alive: " + String(_bFLAG_KeepAlive) + "\n");
-#endif
+		dbg(DBG_BLUETOOTH, "Keep alive: " + String(_bFLAG_KeepAlive) + "\n");
 	}
 }
 
@@ -351,9 +351,7 @@ void Bluetooth::writeShockDetect()
 	if (!_bFLAG_CentralConnected || !_bFLAG_Authenticated || !Shock.readNewData())
 		return;
 
-#ifdef BLUETOOTH_DEBUG_
-	Serial.println("Sending shock data: " + Shock.readShockData() + "\n");
-#endif
+	dbg(DBG_BLUETOOTH, "Sending shock data: " + Shock.readShockData() + "\n");
 
 	_BLE_StringShockDetect.writeValue(Shock.readShockData().c_str(), SHOCK_DATA_SIZE, false);
 	Shock.writeNewData(false);
@@ -367,7 +365,7 @@ void Bluetooth::readRequest()
 
 	char requestDataIn[2]; // = REQUEST_DATA_DEFAULT_VALUE;
 	_BLE_StringRequest.readValue(requestDataIn, REQUEST_DATA_SIZE);
-	// Serial.println("REQ IN: " + String(requestDataIn));
+	// dbg(DBG_BLUETOOTH, "REQ IN: " + String(requestDataIn));
 
 	if (requestDataIn[0] == 'P' && requestDataIn[1] == '0')
 		writeWeight();
@@ -376,9 +374,7 @@ void Bluetooth::readRequest()
 	else if (requestDataIn[0] == 'F' && requestDataIn[1] == '1')
 		findRequest(1);
 
-#ifdef BLUETOOTH_DEBUG_
-	Serial.println("Request incoming: " + String(requestDataIn[0]) + String(requestDataIn[1]) + "\n");
-#endif
+	dbg(DBG_BLUETOOTH, "Request incoming: " + String(requestDataIn[0]) + String(requestDataIn[1]) + "\n");
 
 	_eraseBLEcharateristic(_BLE_StringRequest);
 }
@@ -396,106 +392,80 @@ void Bluetooth::writeWeight()
 
 	Scale.writeScaleData(scaleDataTmp + "." + String(tmp));
 
-#ifdef BLUETOOTH_DEBUG_
-	Serial.println("Sending load cell data: " + Scale.readScaleData() + "\n");
-#endif
+	dbg(DBG_BLUETOOTH, "Sending load cell data: " + Scale.readScaleData() + "\n");
 
 	_BLE_StringWeight.writeValue(Scale.readScaleData().c_str(), LOAD_CELL_DATA_SIZE, false);
 }
 
 void Bluetooth::findRequest(bool sound)
 {
-	// StatusLed.startFindTimer();
-
 	if (!sound)
 	{
 		_findReq = 1;
 
-		// while (!_findTimer.fire())
-		// {
-		// 	StatusLed.setColor(0, LED_COLOR_BLUE);
-		// 	StatusLed.setColor(1, LED_COLOR_OFF);
-		// 	delay(400);
-		// 	StatusLed.setColor(0, LED_COLOR_OFF);
-		// 	StatusLed.setColor(1, LED_COLOR_BLUE);
-		// 	delay(100);
-		// }
-		// 	StatusLed.setColor(0, LED_COLOR_OFF);
-		// 	StatusLed.setColor(1, LED_COLOR_OFF);
+		ledLoopPhase = 3;
+		ledStatusUpdated = true;
+		dbg(DBG_LED, "LEDLOOP PHASE = 3");
 	}
 	else
 	{
 		_findReq = 2;
+		// SUONA
 	}
+}
 
-	// _findTimer.stop();
+void Bluetooth::writeBatteryLevel()
+{
+	if (!_bFLAG_CentralConnected || !_bFLAG_Authenticated)
+		return;
 
-	/*
-	if (StatusLed.fireTimer())
+	if (!_firstWeightSent)
 	{
-		StatusLed.stopTimer();
-		StatusLed.setColor(0, LED_COLOR_OFF);
+		_firstWeightSent = true;
+
+		Battery.getLevel();
+		String data_tmp = Battery.readData(); //"B;OUT";  // Battery.getStringBatteryLevel();
+
+		_BLE_StringBatteryLevel.writeValue(data_tmp.c_str(), BATTERY_DATA_SIZE, false);
+
+		Battery.writeData("");
+
+#ifdef BLUETOOTH_DEBUG_
+		Serial.println(/*"\n*/ "Fault reg:");
+		for (int x = 7; x >= 0; x--)
+			Serial.print(bitRead(nicla::_pmic.readByte(BQ25120A_ADDRESS, BQ25120A_FAULTS), x));
+		Serial.print("\n");
+
+		Serial.println("Sending battery level: " + data_tmp);
+		// Serial.println("Fault register:");
+		// Serial.println(nicla::_pmic.readByte(BQ25120A_ADDRESS, BQ25120A_FAULTS), BIN);
+#endif
 	}
 	else
 	{
-		StatusLed.setColor(0, LED_COLOR_OFF);
-		delay(50);
-		StatusLed.setColor(0, LED_COLOR_BLUE);
-	}*/
+		Battery.startTimer();
+		if (Battery.fireTimer())
+		{
+			Battery.stopTimer();
+
+			Battery.getLevel();
+			String data_tmp = Battery.readData(); //"B;OUT";  // Battery.getStringBatteryLevel();
+
+			_BLE_StringBatteryLevel.writeValue(data_tmp.c_str(), BATTERY_DATA_SIZE, false);
+
+			Battery.writeData("");
+
+#ifdef BLUETOOTH_DEBUG_
+			Serial.println(/*"\n*/ "Fault reg: 0x01");
+			for (int x = 7; x >= 0; x--)
+				Serial.print(bitRead(nicla::_pmic.readByte(BQ25120A_ADDRESS, BQ25120A_FAULTS), x));
+			Serial.print("\n");
+
+			Serial.println("Sending battery level: " + data_tmp);
+			// Serial.println("Fault register:");
+			// Serial.println(nicla::_pmic.readByte(BQ25120A_ADDRESS, BQ25120A_FAULTS), BIN);
+
+#endif
+		}
+	}
 }
-
-// void Bluetooth::writeBatteryLevel()
-// {
-// 	if (!_bFLAG_CentralConnected || !_bFLAG_Authenticated)
-// 		return;
-
-// 	if (!_firstWeightSent)
-// 	{
-// 		_firstWeightSent = true;
-
-// 		Bat.getStringBatteryLevel();
-// 		String data_tmp = Bat.readBatteryData(); //"B;OUT";  // Bat.getStringBatteryLevel();
-
-// 		_BLE_StringBatteryLevel.writeValue(data_tmp.c_str(), BATTERY_DATA_SIZE, false);
-
-// 		Bat.writeBatteryData("");
-
-// #ifdef BLUETOOTH_DEBUG_
-// 		Serial.println(/*"\n*/ "Fault reg:");
-// 		for (int x = 7; x >= 0; x--)
-// 			Serial.print(bitRead(nicla::_pmic.readByte(BQ25120A_ADDRESS, BQ25120A_FAULTS), x));
-// 		Serial.print("\n");
-
-// 		Serial.println("Sending battery level: " + data_tmp);
-// 		// Serial.println("Fault register:");
-// 		// Serial.println(nicla::_pmic.readByte(BQ25120A_ADDRESS, BQ25120A_FAULTS), BIN);
-// #endif
-// 	}
-// 	else
-// 	{
-// 		Bat.startTimer();
-// 		if (Bat.fireTimer())
-// 		{
-// 			Bat.stopTimer();
-
-// 			Bat.getStringBatteryLevel();
-// 			String data_tmp = Bat.readBatteryData(); //"B;OUT";  // Bat.getStringBatteryLevel();
-
-// 			_BLE_StringBatteryLevel.writeValue(data_tmp.c_str(), BATTERY_DATA_SIZE, false);
-
-// 			Bat.writeBatteryData("");
-
-// #ifdef BLUETOOTH_DEBUG_
-// 			Serial.println(/*"\n*/ "Fault reg: 0x01");
-// 			for (int x = 7; x >= 0; x--)
-// 				Serial.print(bitRead(nicla::_pmic.readByte(BQ25120A_ADDRESS, BQ25120A_FAULTS), x));
-// 			Serial.print("\n");
-
-// 			Serial.println("Sending battery level: " + data_tmp);
-// 			// Serial.println("Fault register:");
-// 			// Serial.println(nicla::_pmic.readByte(BQ25120A_ADDRESS, BQ25120A_FAULTS), BIN);
-
-// #endif
-// 		}
-// 	}
-// }

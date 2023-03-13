@@ -14,9 +14,7 @@ void LoadCell::setup()
     // _scale_A.power_down(); // put the ADC in sleep mode
     // _scale_B.power_down();
 
-#ifdef LOAD_CELL_DEBUG_
-    Serial.println("Load cell setup OK");
-#endif
+    dbg(DBG_LOAD_CELL, "Load cell setup OK");
 }
 
 float LoadCell::getWeight()
@@ -35,9 +33,7 @@ float LoadCell::getWeight()
     // _scale_A.power_down(); // put the ADC in sleep mode
     // _scale_B.power_down();
 
-#ifdef LOAD_CELL_DEBUG_
-    Serial.println("Weight: " + String(tmp_weight_A + tmp_weight_B) + " Kg");
-#endif
+    dbg(DBG_LOAD_CELL, "Weight: " + String(tmp_weight_A + tmp_weight_B) + " Kg");
 
     return tmp_weight_A + tmp_weight_B;
 }

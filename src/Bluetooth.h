@@ -5,12 +5,16 @@
 #include <def.h>
 #include <ShockDetection.h>
 #include <LoadCell.h>
-#include <Battery.h>
+#include <BatteryIntfc.h>
+
 
 extern ShockDetection Shock;
 extern LoadCell Scale;
-extern Battery Bat;
+extern BatteryIntfc Battery;
 // extern Led StatusLed;
+
+extern uint8_t ledLoopPhase;
+extern bool ledStatusUpdated;
 
 class Bluetooth
 {
@@ -47,11 +51,11 @@ public:
     void writeBatteryLevel();
     void findRequest(bool sound); // 0-sound off   1-sound on
 
-    bool readFlagCentralConnected() { return _bFLAG_CentralConnected; }
-    bool readFlagAuthenticated() { return _bFLAG_Authenticated; }
+    inline bool readFlagCentralConnected() { return _bFLAG_CentralConnected; }
+    inline bool readFlagAuthenticated() { return _bFLAG_Authenticated; }
 
-    int readFindReq() { return _findReq; }
-    void writeFindReq(int tmp) { _findReq = tmp; }
+    inline int readFindReq() { return _findReq; }
+    inline void writeFindReq(int tmp) { _findReq = tmp; }
 
 private:
     void _setupBLEdeviceName();
